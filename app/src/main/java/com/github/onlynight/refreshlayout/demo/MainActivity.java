@@ -4,6 +4,8 @@ import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.Toast;
 
 import com.github.onlynight.refreshlayout.RefreshLayout;
 
@@ -38,4 +40,7 @@ public class MainActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
+    public void temp(View view) {
+        Toast.makeText(this, "temp", Toast.LENGTH_SHORT).show();
+    }
 }

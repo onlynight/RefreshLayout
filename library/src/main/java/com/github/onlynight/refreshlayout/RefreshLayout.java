@@ -9,6 +9,7 @@ import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.view.Gravity;
 import android.view.MotionEvent;
+import android.view.VelocityTracker;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
@@ -28,8 +29,8 @@ public class RefreshLayout extends FrameLayout {
 
     private boolean mStartAnimFlag = false;
     private boolean mEndAnimFlag = true;
-    private float startY;
-    private float startX;
+    private float lastY;
+    private float lastY1;
     private float mMoveY;
 
     private float mHeaderViewHeight = 0;
@@ -43,6 +44,9 @@ public class RefreshLayout extends FrameLayout {
 
     private int mState = STATE_START;
     private ValueAnimator animator;
+    private float startY;
+
+    private VelocityTracker mVelocityTracker;
 
     public RefreshLayout(Context context) {
         super(context);
@@ -77,6 +81,7 @@ public class RefreshLayout extends FrameLayout {
     private void initView(TypedArray array) {
         addRefreshHeader();
 
+        mVelocityTracker = VelocityTracker.obtain();
         changeState(STATE_START);
     }
 
@@ -119,7 +124,13 @@ public class RefreshLayout extends FrameLayout {
 
     public void setRefreshing(boolean refreshing) {
         mRefreshing = refreshing;
-        changeState(refreshing ? STATE_REFRESHING_DOWN : STATE_START);
+        if (refreshing) {
+            changeState(STATE_REFRESHING_DOWN);
+        } else {
+            if (mState != STATE_START) {
+                changeState(STATE_START);
+            }
+        }
     }
 
     private void refreshingAnim() {
@@ -150,40 +161,59 @@ public class RefreshLayout extends FrameLayout {
         }
     }
 
-    @Override
-    public boolean dispatchTouchEvent(MotionEvent ev) {
-        return mRefreshingEnable && (isRefresh(ev) || super.dispatchTouchEvent(ev));
+    private boolean isRefresh(MotionEvent ev) {
+        float startY = ev.getY();
+        switch (ev.getAction()) {
+            case MotionEvent.ACTION_DOWN:
+                break;
+            case MotionEvent.ACTION_MOVE:
+                float moveY = (startY - lastY) / 3;
+                mMoveY = moveY;
+                if (moveY > 0 && checkCanPull()) {
+                    changeState(STATE_PULL);
+                    return true;
+                } else {
+                    return false;
+                }
+            case MotionEvent.ACTION_UP:
+                if (mState == STATE_PULL) {
+                    changeState(STATE_REFRESHING_UP);
+                }
+                break;
+        }
+        lastY = startY;
+        return false;
     }
 
-    private boolean isRefresh(MotionEvent ev) {
-//        if (mState == STATE_REFRESHING_UP || mState == STATE_REFRESHING_DOWN) {
-//            return true;
-//        }
-
-        if (mContentView instanceof ScrollView) {
-            switch (ev.getAction()) {
-                case MotionEvent.ACTION_DOWN:
-                    startY = ev.getY();
-                    startX = ev.getX();
-                    break;
-                case MotionEvent.ACTION_MOVE:
-                    mMoveY = (ev.getY() - startY) / 3;
-                    if (mMoveY > 0 && checkCanPull()) {
-                        changeState(STATE_PULL);
-                        return true;
-                    } else {
-                        return false;
-                    }
-                case MotionEvent.ACTION_UP:
-                    if (mState == STATE_PULL) {
-                        changeState(STATE_REFRESHING_UP);
-                    }
-                    startY = 0;
-                    break;
-            }
+    @Override
+    public boolean onInterceptTouchEvent(MotionEvent ev) {
+        float startY = ev.getY();
+        switch (ev.getAction()) {
+            case MotionEvent.ACTION_DOWN:
+                break;
+            case MotionEvent.ACTION_MOVE:
+                float moveY = (startY - lastY1) / 3;
+//                System.out.println();
+//                System.out.println("startY = " + startY);
+//                System.out.println("lastY = " + lastY1);
+//                System.out.println("moveY = " + moveY);
+                return moveY > 0 && checkCanPull();
+            case MotionEvent.ACTION_UP:
+                lastY1 = 0;
+                break;
         }
 
-        return false;
+        lastY1 = startY;
+
+        return super.onInterceptTouchEvent(ev);
+    }
+
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent ev) {
+        if (mRefreshingEnable) {
+            isRefresh(ev);
+        }
+        return super.dispatchTouchEvent(ev);
     }
 
     private void initContentView() {
@@ -206,7 +236,6 @@ public class RefreshLayout extends FrameLayout {
                 refreshingAnim();
                 break;
             case STATE_REFRESHING_UP:
-                mMoveY += mHeaderViewHeight;
                 mFinalHeaderY = mHeaderViewHeight;
                 refreshingAnim();
                 break;
