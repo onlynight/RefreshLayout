@@ -11,46 +11,46 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <TextView
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="@color/colorPrimary"
-        android:gravity="center"
-        android:onClick="temp"
-        android:text="content"
-        android:textColor="#ffffff"
-        android:textSize="20sp" />
+        <!--<TextView-->
+        <!--android:layout_width="match_parent"-->
+        <!--android:layout_height="match_parent"-->
+        <!--android:background="@color/colorPrimary"-->
+        <!--android:gravity="center"-->
+        <!--android:onClick="temp"-->
+        <!--android:text="content"-->
+        <!--android:textColor="#ffffff"-->
+        <!--android:textSize="20sp" />-->
 
-        <!--<ScrollView-->
-            <!--android:layout_width="match_parent"-->
-            <!--android:layout_height="match_parent">-->
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
 
-            <!--<LinearLayout-->
-                <!--android:layout_width="match_parent"-->
-                <!--android:layout_height="wrap_content"-->
-                <!--android:orientation="vertical">-->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
 
-                <!--<TextView-->
-                    <!--android:layout_width="match_parent"-->
-                    <!--android:layout_height="400dp"-->
-                    <!--android:background="@color/colorPrimary"-->
-                    <!--android:gravity="center"-->
-                    <!--android:text="content"-->
-                    <!--android:textColor="#ffffff"-->
-                    <!--android:textSize="20sp" />-->
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="400dp"
+                    android:background="@color/colorPrimary"
+                    android:gravity="center"
+                    android:text="content"
+                    android:textColor="#ffffff"
+                    android:textSize="20sp" />
 
-                <!--<TextView-->
-                    <!--android:layout_width="match_parent"-->
-                    <!--android:layout_height="400dp"-->
-                    <!--android:background="@color/colorAccent"-->
-                    <!--android:gravity="center"-->
-                    <!--android:text="content"-->
-                    <!--android:textColor="#ffffff"-->
-                    <!--android:textSize="20sp" />-->
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="400dp"
+                    android:background="@color/colorAccent"
+                    android:gravity="center"
+                    android:text="content"
+                    android:textColor="#ffffff"
+                    android:textSize="20sp" />
 
-            <!--</LinearLayout>-->
+            </LinearLayout>
 
-        <!--</ScrollView>-->
+        </ScrollView>
 
     </com.github.onlynight.refreshlayout.RefreshLayout>
 

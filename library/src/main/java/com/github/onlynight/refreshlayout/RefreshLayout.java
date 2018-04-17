@@ -120,7 +120,7 @@ public class RefreshLayout extends FrameLayout {
                         mOnLayoutFinish = false;
                         mHeaderViewHeight = mRefreshHeaderView.getHeight();
                         mMoveY = 0;
-                        mFinalHeaderY = mHeaderViewHeight;
+                        mFinalHeaderY = mState == STATE_REFRESHING_DOWN ? mHeaderViewHeight : 0;
                         refreshingAnim();
                     }
                 }
@@ -326,7 +326,7 @@ public class RefreshLayout extends FrameLayout {
                     if (mOnLayoutFinish) {
                         mOnLayoutFinish = false;
                         mHeaderViewHeight = mRefreshHeaderView.getHeight();
-                        mFinalHeaderY = mHeaderViewHeight;
+                        mFinalHeaderY = mState == STATE_REFRESHING_DOWN ? mHeaderViewHeight : 0;
                         mMoveY = 0;
                     }
                 }
