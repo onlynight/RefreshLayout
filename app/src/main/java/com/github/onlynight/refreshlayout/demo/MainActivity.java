@@ -19,6 +19,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         refreshLayout = findViewById(R.id.refresh_layout);
+        refreshLayout.setHeaderView(new HeaderView(this));
         refreshLayout.setRefreshing(true);
     }
 
@@ -41,6 +42,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void temp(View view) {
+        refreshLayout.setRefreshing(false);
         Toast.makeText(this, "temp", Toast.LENGTH_SHORT).show();
     }
 }

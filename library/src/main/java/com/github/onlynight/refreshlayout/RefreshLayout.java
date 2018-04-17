@@ -1,52 +1,41 @@
 package com.github.onlynight.refreshlayout;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.res.TypedArray;
-import android.graphics.Color;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
-import android.view.Gravity;
 import android.view.MotionEvent;
-import android.view.VelocityTracker;
 import android.view.View;
-import android.view.ViewGroup;
-import android.view.ViewTreeObserver;
 import android.widget.FrameLayout;
-import android.widget.LinearLayout;
 import android.widget.ScrollView;
-import android.widget.TextView;
-import android.widget.Toast;
 
 public class RefreshLayout extends FrameLayout {
-
-    private LinearLayout mHeader;
-    private View mContentView;
-
-    private boolean mRefreshing = false;
-    private boolean mRefreshingEnable = true;
-
-    private boolean mStartAnimFlag = false;
-    private boolean mEndAnimFlag = true;
-    private float lastY;
-    private float lastY1;
-    private float mMoveY;
-
-    private float mHeaderViewHeight = 0;
-    private float mFinalHeaderY = 0;
-    private long mAnimTime = 500;
 
     private static final int STATE_START = 0;
     private static final int STATE_REFRESHING_DOWN = STATE_START + 1;
     private static final int STATE_REFRESHING_UP = STATE_START + 2;
     private static final int STATE_PULL = STATE_START + 3;
 
-    private int mState = STATE_START;
-    private ValueAnimator animator;
-    private float startY;
+    private RefreshHeaderView mRefreshHeaderView;
+    private View mContentView;
 
-    private VelocityTracker mVelocityTracker;
+    private boolean mRefreshingEnable = true;
+    private boolean mOnLayoutFinish = true;
+
+    private float mLastY;
+    private float mLastYIntercept;
+    private float mMoveY = 0;
+
+    private float mHeaderViewHeight = 0;
+    private float mFinalHeaderY = 0;
+    private long mAnimTime = 500;
+
+    private int mState = STATE_START;
 
     public RefreshLayout(Context context) {
         super(context);
@@ -79,41 +68,7 @@ public class RefreshLayout extends FrameLayout {
     }
 
     private void initView(TypedArray array) {
-        addRefreshHeader();
-
-        mVelocityTracker = VelocityTracker.obtain();
         changeState(STATE_START);
-    }
-
-    private void addRefreshHeader() {
-        mHeader = new LinearLayout(getContext());
-        LayoutParams headerParams = new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT);
-        mHeader.setLayoutParams(headerParams);
-        mHeader.setGravity(Gravity.CENTER);
-        mHeader.setBackgroundColor(Color.YELLOW);
-
-        final TextView text = new TextView(getContext());
-        text.setText("Title");
-        text.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Toast.makeText(getContext(), text.getText(), Toast.LENGTH_SHORT).show();
-                refreshingAnim();
-            }
-        });
-
-        MarginLayoutParams marginLayoutParams = new MarginLayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT);
-        marginLayoutParams.bottomMargin = 50;
-        marginLayoutParams.topMargin = 50;
-        marginLayoutParams.leftMargin = 50;
-        marginLayoutParams.rightMargin = 50;
-        text.setLayoutParams(marginLayoutParams);
-
-        mHeader.addView(text);
-
-        addView(mHeader);
     }
 
     @Override
@@ -123,7 +78,6 @@ public class RefreshLayout extends FrameLayout {
     }
 
     public void setRefreshing(boolean refreshing) {
-        mRefreshing = refreshing;
         if (refreshing) {
             changeState(STATE_REFRESHING_DOWN);
         } else {
@@ -134,28 +88,30 @@ public class RefreshLayout extends FrameLayout {
     }
 
     private void refreshingAnim() {
-
         if (mHeaderViewHeight <= 0) {
-            getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
-                @Override
-                public void onGlobalLayout() {
-                    if (mEndAnimFlag) {
-                        mEndAnimFlag = false;
-                        mHeaderViewHeight = mHeader.getHeight();
-                        mMoveY = 0;
-                        mFinalHeaderY = mHeaderViewHeight;
-                        refreshingAnim();
-                    }
+            getViewTreeObserver().addOnGlobalLayoutListener(() -> {
+                if (mOnLayoutFinish && mRefreshHeaderView != null) {
+                    mOnLayoutFinish = false;
+                    mHeaderViewHeight = mRefreshHeaderView.getHeight();
+                    mMoveY = 0;
+                    mFinalHeaderY = mHeaderViewHeight;
+                    refreshingAnim();
                 }
             });
         } else {
-            animator = ValueAnimator.ofFloat(mMoveY, mFinalHeaderY);
+            ValueAnimator animator = ValueAnimator.ofFloat(mMoveY, mFinalHeaderY);
             animator.setDuration(mAnimTime);
-            animator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+            animator.addUpdateListener(valueAnimator -> setViewY((Float) valueAnimator.getAnimatedValue()));
+            animator.addListener(new AnimatorListenerAdapter() {
+
                 @Override
-                public void onAnimationUpdate(ValueAnimator valueAnimator) {
-                    setViewY((Float) valueAnimator.getAnimatedValue());
+                public void onAnimationEnd(Animator animation) {
+                    super.onAnimationEnd(animation);
+                    if (mRefreshHeaderView != null && mState == STATE_START) {
+                        mRefreshHeaderView.onBackToOriginalState();
+                    }
                 }
+
             });
             animator.start();
         }
@@ -167,7 +123,7 @@ public class RefreshLayout extends FrameLayout {
             case MotionEvent.ACTION_DOWN:
                 break;
             case MotionEvent.ACTION_MOVE:
-                float moveY = (startY - lastY) / 3;
+                float moveY = (startY - mLastY) / 3;
                 mMoveY = moveY;
                 if (moveY > 0 && checkCanPull()) {
                     changeState(STATE_PULL);
@@ -181,31 +137,8 @@ public class RefreshLayout extends FrameLayout {
                 }
                 break;
         }
-        lastY = startY;
+        mLastY = startY;
         return false;
-    }
-
-    @Override
-    public boolean onInterceptTouchEvent(MotionEvent ev) {
-        float startY = ev.getY();
-        switch (ev.getAction()) {
-            case MotionEvent.ACTION_DOWN:
-                break;
-            case MotionEvent.ACTION_MOVE:
-                float moveY = (startY - lastY1) / 3;
-//                System.out.println();
-//                System.out.println("startY = " + startY);
-//                System.out.println("lastY = " + lastY1);
-//                System.out.println("moveY = " + moveY);
-                return moveY > 0 && checkCanPull();
-            case MotionEvent.ACTION_UP:
-                lastY1 = 0;
-                break;
-        }
-
-        lastY1 = startY;
-
-        return super.onInterceptTouchEvent(ev);
     }
 
     @Override
@@ -216,9 +149,32 @@ public class RefreshLayout extends FrameLayout {
         return super.dispatchTouchEvent(ev);
     }
 
+    @Override
+    public boolean onInterceptTouchEvent(MotionEvent ev) {
+        float startY = ev.getY();
+        switch (ev.getAction()) {
+            case MotionEvent.ACTION_DOWN:
+                break;
+            case MotionEvent.ACTION_MOVE:
+                float moveY = (startY - mLastYIntercept) / 3;
+                boolean intercept = moveY > 0 && checkCanPull();
+                if (intercept && mRefreshHeaderView != null) {
+                    mRefreshHeaderView.onStartRefresh();
+                }
+                return intercept;
+            case MotionEvent.ACTION_UP:
+                mLastYIntercept = 0;
+                break;
+        }
+
+        mLastYIntercept = startY;
+
+        return super.onInterceptTouchEvent(ev);
+    }
+
     private void initContentView() {
-        if (mContentView == null && getChildCount() > 1) {
-            mContentView = getChildAt(1);
+        if (mContentView == null && getChildCount() > 0) {
+            mContentView = getChildAt(0);
         }
     }
 
@@ -231,15 +187,24 @@ public class RefreshLayout extends FrameLayout {
         mAnimTime = 200;
         switch (mState) {
             case STATE_START:
+                if (mRefreshHeaderView != null) {
+                    mRefreshHeaderView.onFinishRefresh();
+                }
                 mMoveY = mHeaderViewHeight;
                 mFinalHeaderY = 0;
                 refreshingAnim();
                 break;
             case STATE_REFRESHING_UP:
+                if (mRefreshHeaderView != null) {
+                    mRefreshHeaderView.onRefreshing();
+                }
                 mFinalHeaderY = mHeaderViewHeight;
                 refreshingAnim();
                 break;
             case STATE_REFRESHING_DOWN:
+                if (mRefreshHeaderView != null) {
+                    mRefreshHeaderView.onRefreshing();
+                }
                 if (mHeaderViewHeight > 0) {
                     mMoveY = 0;
                     mFinalHeaderY = mHeaderViewHeight;
@@ -251,13 +216,24 @@ public class RefreshLayout extends FrameLayout {
                 if (mFinalHeaderY > 0) {
                     moveY += mFinalHeaderY;
                 }
+
+                if (mRefreshHeaderView != null) {
+                    if (moveY > mHeaderViewHeight) {
+                        mRefreshHeaderView.onReleaseToRefresh();
+                    } else {
+                        mRefreshHeaderView.onStartRefresh();
+                    }
+                }
+
                 setViewY(moveY);
                 break;
         }
     }
 
     private void setViewY(float moveY) {
-        mHeader.setY(-mHeaderViewHeight + moveY);
+        if (mRefreshHeaderView != null) {
+            mRefreshHeaderView.setY(-mHeaderViewHeight + moveY);
+        }
         if (mContentView != null) {
             mContentView.setY(moveY);
         }
@@ -276,7 +252,58 @@ public class RefreshLayout extends FrameLayout {
         return true;
     }
 
+    public void setHeaderView(RefreshHeaderView headerView) {
+        this.mRefreshHeaderView = headerView;
+        if (mRefreshHeaderView != null) {
+            this.addView(mRefreshHeaderView);
+            mRefreshHeaderView.getViewTreeObserver().addOnGlobalLayoutListener(() -> {
+                if (mOnLayoutFinish) {
+                    mOnLayoutFinish = false;
+                    mHeaderViewHeight = mRefreshHeaderView.getHeight();
+                    mFinalHeaderY = mHeaderViewHeight;
+                    mMoveY = 0;
+                }
+            });
+        }
+    }
+
     public void setRefreshingEnable(boolean refreshingEnable) {
         this.mRefreshingEnable = refreshingEnable;
     }
+
+    public interface IRefreshHeaderView {
+
+        void onStartRefresh();
+
+        void onReleaseToRefresh();
+
+        void onRefreshing();
+
+        void onFinishRefresh();
+
+        void onBackToOriginalState();
+
+    }
+
+    public abstract static class RefreshHeaderView extends FrameLayout implements IRefreshHeaderView {
+
+        public RefreshHeaderView(@NonNull Context context) {
+            super(context);
+        }
+
+        public RefreshHeaderView(@NonNull Context context, @Nullable AttributeSet attrs) {
+            super(context, attrs);
+        }
+
+        public RefreshHeaderView(@NonNull Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
+            super(context, attrs, defStyleAttr);
+        }
+
+        @TargetApi(21)
+        public RefreshHeaderView(@NonNull Context context, @Nullable AttributeSet attrs, int defStyleAttr, int defStyleRes) {
+            super(context, attrs, defStyleAttr, defStyleRes);
+        }
+
+    }
+
 }
