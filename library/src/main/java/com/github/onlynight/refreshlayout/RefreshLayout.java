@@ -12,6 +12,7 @@ import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
@@ -112,21 +113,27 @@ public class RefreshLayout extends FrameLayout {
 
     private void refreshingAnim() {
         if (mHeaderViewHeight <= 0) {
-            getViewTreeObserver().addOnGlobalLayoutListener(() -> {
-                if (mOnLayoutFinish && mRefreshHeaderView != null) {
-                    mOnLayoutFinish = false;
-                    mHeaderViewHeight = mRefreshHeaderView.getHeight();
-                    mMoveY = 0;
-                    mFinalHeaderY = mHeaderViewHeight;
-                    refreshingAnim();
+            getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+                @Override
+                public void onGlobalLayout() {
+                    if (mOnLayoutFinish && mRefreshHeaderView != null) {
+                        mOnLayoutFinish = false;
+                        mHeaderViewHeight = mRefreshHeaderView.getHeight();
+                        mMoveY = 0;
+                        mFinalHeaderY = mHeaderViewHeight;
+                        refreshingAnim();
+                    }
                 }
             });
         } else {
             mAnimator = ValueAnimator.ofFloat(mMoveY, mFinalHeaderY);
             mAnimator.setDuration(mAnimTime);
-            mAnimator.addUpdateListener(valueAnimator -> {
-                mMoveY = (Float) valueAnimator.getAnimatedValue();
-                setViewY(mMoveY);
+            mAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+                @Override
+                public void onAnimationUpdate(ValueAnimator animation) {
+                    mMoveY = (Float) animation.getAnimatedValue();
+                    setViewY(mMoveY);
+                }
             });
             mAnimator.addListener(new AnimatorListenerAdapter() {
 
@@ -163,7 +170,7 @@ public class RefreshLayout extends FrameLayout {
             case MotionEvent.ACTION_DOWN:
                 break;
             case MotionEvent.ACTION_MOVE:
-                float moveY = (startY - mLastY) / 3;
+                float moveY = (startY - mLastY) / 2;
                 mMoveY = moveY;
                 if (moveY > 0 && checkCanPull()) {
                     changeState(STATE_PULL);
@@ -313,12 +320,15 @@ public class RefreshLayout extends FrameLayout {
             mRefreshHeaderView.setLayoutParams(new LinearLayout.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
             this.addView(mRefreshHeaderView);
-            mRefreshHeaderView.getViewTreeObserver().addOnGlobalLayoutListener(() -> {
-                if (mOnLayoutFinish) {
-                    mOnLayoutFinish = false;
-                    mHeaderViewHeight = mRefreshHeaderView.getHeight();
-                    mFinalHeaderY = mHeaderViewHeight;
-                    mMoveY = 0;
+            mRefreshHeaderView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+                @Override
+                public void onGlobalLayout() {
+                    if (mOnLayoutFinish) {
+                        mOnLayoutFinish = false;
+                        mHeaderViewHeight = mRefreshHeaderView.getHeight();
+                        mFinalHeaderY = mHeaderViewHeight;
+                        mMoveY = 0;
+                    }
                 }
             });
         }
