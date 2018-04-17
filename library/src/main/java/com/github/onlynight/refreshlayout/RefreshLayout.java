@@ -9,6 +9,7 @@ import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.view.Gravity;
 import android.view.MotionEvent;
+import android.view.VelocityTracker;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
@@ -28,12 +29,13 @@ public class RefreshLayout extends FrameLayout {
 
     private boolean mStartAnimFlag = false;
     private boolean mEndAnimFlag = true;
-    private float startY;
-    private float startX;
+    private float lastY;
+    private float lastY1;
     private float mMoveY;
 
     private float mHeaderViewHeight = 0;
     private float mFinalHeaderY = 0;
+    private long mAnimTime = 500;
 
     private static final int STATE_START = 0;
     private static final int STATE_REFRESHING_DOWN = STATE_START + 1;
@@ -42,6 +44,9 @@ public class RefreshLayout extends FrameLayout {
 
     private int mState = STATE_START;
     private ValueAnimator animator;
+    private float startY;
+
+    private VelocityTracker mVelocityTracker;
 
     public RefreshLayout(Context context) {
         super(context);
@@ -76,6 +81,7 @@ public class RefreshLayout extends FrameLayout {
     private void initView(TypedArray array) {
         addRefreshHeader();
 
+        mVelocityTracker = VelocityTracker.obtain();
         changeState(STATE_START);
     }
 
@@ -113,11 +119,18 @@ public class RefreshLayout extends FrameLayout {
     @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
         super.onLayout(changed, l, t, r, b);
+        initContentView();
     }
 
     public void setRefreshing(boolean refreshing) {
         mRefreshing = refreshing;
-        changeState(STATE_REFRESHING_DOWN);
+        if (refreshing) {
+            changeState(STATE_REFRESHING_DOWN);
+        } else {
+            if (mState != STATE_START) {
+                changeState(STATE_START);
+            }
+        }
     }
 
     private void refreshingAnim() {
@@ -137,53 +150,70 @@ public class RefreshLayout extends FrameLayout {
             });
         } else {
             animator = ValueAnimator.ofFloat(mMoveY, mFinalHeaderY);
-            animator.setDuration(300);
+            animator.setDuration(mAnimTime);
             animator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
                 @Override
                 public void onAnimationUpdate(ValueAnimator valueAnimator) {
                     setViewY((Float) valueAnimator.getAnimatedValue());
                 }
             });
-//            animator.setStartDelay(1000);
             animator.start();
         }
     }
 
-    @Override
-    public boolean dispatchTouchEvent(MotionEvent ev) {
-        return mRefreshingEnable && (isRefresh(ev) || super.dispatchTouchEvent(ev));
+    private boolean isRefresh(MotionEvent ev) {
+        float startY = ev.getY();
+        switch (ev.getAction()) {
+            case MotionEvent.ACTION_DOWN:
+                break;
+            case MotionEvent.ACTION_MOVE:
+                float moveY = (startY - lastY) / 3;
+                mMoveY = moveY;
+                if (moveY > 0 && checkCanPull()) {
+                    changeState(STATE_PULL);
+                    return true;
+                } else {
+                    return false;
+                }
+            case MotionEvent.ACTION_UP:
+                if (mState == STATE_PULL) {
+                    changeState(STATE_REFRESHING_UP);
+                }
+                break;
+        }
+        lastY = startY;
+        return false;
     }
 
-    private boolean isRefresh(MotionEvent ev) {
-        initContentView();
-//        if (mState == STATE_REFRESHING_UP || mState == STATE_REFRESHING_DOWN) {
-//            return true;
-//        }
-
-        if (mContentView instanceof ScrollView) {
-            switch (ev.getAction()) {
-                case MotionEvent.ACTION_DOWN:
-                    startY = ev.getY();
-                    startX = ev.getX();
-                    break;
-                case MotionEvent.ACTION_MOVE:
-                    mMoveY = (ev.getY() - startY) / 3;
-                    if (mMoveY > 0) {
-                        changeState(STATE_PULL);
-                        return true;
-                    } else {
-                        return false;
-                    }
-                case MotionEvent.ACTION_UP:
-                    if (mState == STATE_PULL) {
-                        changeState(STATE_REFRESHING_UP);
-                    }
-                    startY = 0;
-                    break;
-            }
+    @Override
+    public boolean onInterceptTouchEvent(MotionEvent ev) {
+        float startY = ev.getY();
+        switch (ev.getAction()) {
+            case MotionEvent.ACTION_DOWN:
+                break;
+            case MotionEvent.ACTION_MOVE:
+                float moveY = (startY - lastY1) / 3;
+//                System.out.println();
+//                System.out.println("startY = " + startY);
+//                System.out.println("lastY = " + lastY1);
+//                System.out.println("moveY = " + moveY);
+                return moveY > 0 && checkCanPull();
+            case MotionEvent.ACTION_UP:
+                lastY1 = 0;
+                break;
         }
 
-        return false;
+        lastY1 = startY;
+
+        return super.onInterceptTouchEvent(ev);
+    }
+
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent ev) {
+        if (mRefreshingEnable) {
+            isRefresh(ev);
+        }
+        return super.dispatchTouchEvent(ev);
     }
 
     private void initContentView() {
@@ -193,20 +223,15 @@ public class RefreshLayout extends FrameLayout {
     }
 
     private void changeState(int state) {
-        changeState(state, true);
-    }
-
-    private void changeState(int state, boolean postView) {
         this.mState = state;
-        if (postView) {
-            postViewY(mMoveY);
-        }
+        postViewY(mMoveY);
     }
 
     private void postViewY(float moveY) {
+        mAnimTime = 200;
         switch (mState) {
             case STATE_START:
-                mMoveY = -mHeaderViewHeight;
+                mMoveY = mHeaderViewHeight;
                 mFinalHeaderY = 0;
                 refreshingAnim();
                 break;
@@ -219,6 +244,7 @@ public class RefreshLayout extends FrameLayout {
                     mMoveY = 0;
                     mFinalHeaderY = mHeaderViewHeight;
                 }
+                mAnimTime = 500;
                 refreshingAnim();
                 break;
             case STATE_PULL:
@@ -235,7 +261,19 @@ public class RefreshLayout extends FrameLayout {
         if (mContentView != null) {
             mContentView.setY(moveY);
         }
-//        invalidate();
+    }
+
+    private boolean checkCanPull() {
+        if (mState == STATE_REFRESHING_UP || mState == STATE_REFRESHING_DOWN) {
+            return false;
+        }
+
+        if (mContentView instanceof ScrollView) {
+            int posY = mContentView.getScrollY();
+            return posY <= 0;
+        }
+
+        return true;
     }
 
     public void setRefreshingEnable(boolean refreshingEnable) {
