@@ -2,7 +2,7 @@
 <resources>
 
     <declare-styleable name="RefreshLayout">
-        <attr name="test"/>
+        <attr name="test" format="string|reference" />
     </declare-styleable>
 
 </resources>
