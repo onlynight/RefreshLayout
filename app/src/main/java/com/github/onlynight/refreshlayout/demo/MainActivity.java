@@ -8,8 +8,9 @@ import android.view.View;
 import android.widget.Toast;
 
 import com.github.onlynight.refreshlayout.RefreshLayout;
+import com.github.onlynight.refreshlayout.demo.header.HeaderView;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements RefreshLayout.OnRefreshListener {
 
     RefreshLayout refreshLayout;
 
@@ -19,8 +20,10 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         refreshLayout = findViewById(R.id.refresh_layout);
+        refreshLayout.setOnRefreshListener(this);
         refreshLayout.setHeaderView(new HeaderView(this));
         refreshLayout.setRefreshing(true);
+        refreshLayout.setRefreshing(false);
     }
 
     @Override
@@ -43,6 +46,10 @@ public class MainActivity extends AppCompatActivity {
 
     public void temp(View view) {
         refreshLayout.setRefreshing(false);
-        Toast.makeText(this, "temp", Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    public void onRefreshing(RefreshLayout refreshLayout) {
+        Toast.makeText(this, "onRefreshing", Toast.LENGTH_SHORT).show();
     }
 }

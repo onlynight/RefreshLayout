@@ -11,7 +11,9 @@ import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.FrameLayout;
+import android.widget.LinearLayout;
 import android.widget.ScrollView;
 
 public class RefreshLayout extends FrameLayout {
@@ -20,6 +22,7 @@ public class RefreshLayout extends FrameLayout {
     private static final int STATE_REFRESHING_DOWN = STATE_START + 1;
     private static final int STATE_REFRESHING_UP = STATE_START + 2;
     private static final int STATE_PULL = STATE_START + 3;
+    private static final int STATE_CANCEL = STATE_START + 4;
 
     private RefreshHeaderView mRefreshHeaderView;
     private View mContentView;
@@ -36,6 +39,11 @@ public class RefreshLayout extends FrameLayout {
     private long mAnimTime = 500;
 
     private int mState = STATE_START;
+    private ValueAnimator mAnimator;
+
+    private boolean mPostFinish = false;
+
+    private OnRefreshListener mOnRefreshListener;
 
     public RefreshLayout(Context context) {
         super(context);
@@ -71,6 +79,10 @@ public class RefreshLayout extends FrameLayout {
         changeState(STATE_START);
     }
 
+    public void setOnRefreshListener(OnRefreshListener onRefreshListener) {
+        this.mOnRefreshListener = onRefreshListener;
+    }
+
     @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
         super.onLayout(changed, l, t, r, b);
@@ -81,8 +93,19 @@ public class RefreshLayout extends FrameLayout {
         if (refreshing) {
             changeState(STATE_REFRESHING_DOWN);
         } else {
-            if (mState != STATE_START) {
-                changeState(STATE_START);
+            if (mAnimator != null) {
+                if (mAnimator.isRunning()) {
+                    mAnimator.cancel();
+                    changeState(STATE_CANCEL);
+                } else {
+                    if (mState != STATE_START && mState != STATE_CANCEL) {
+                        changeState(STATE_START);
+                    }
+                }
+            } else {
+                if (STATE_START != mState) {
+                    mPostFinish = true;
+                }
             }
         }
     }
@@ -99,21 +122,38 @@ public class RefreshLayout extends FrameLayout {
                 }
             });
         } else {
-            ValueAnimator animator = ValueAnimator.ofFloat(mMoveY, mFinalHeaderY);
-            animator.setDuration(mAnimTime);
-            animator.addUpdateListener(valueAnimator -> setViewY((Float) valueAnimator.getAnimatedValue()));
-            animator.addListener(new AnimatorListenerAdapter() {
+            mAnimator = ValueAnimator.ofFloat(mMoveY, mFinalHeaderY);
+            mAnimator.setDuration(mAnimTime);
+            mAnimator.addUpdateListener(valueAnimator -> {
+                mMoveY = (Float) valueAnimator.getAnimatedValue();
+                setViewY(mMoveY);
+            });
+            mAnimator.addListener(new AnimatorListenerAdapter() {
 
                 @Override
                 public void onAnimationEnd(Animator animation) {
                     super.onAnimationEnd(animation);
-                    if (mRefreshHeaderView != null && mState == STATE_START) {
-                        mRefreshHeaderView.onBackToOriginalState();
+                    if (mPostFinish) {
+                        mPostFinish = false;
+                        changeState(STATE_START);
+                    } else {
+                        if (mState == STATE_CANCEL) {
+                            mState = STATE_START;
+                        }
+                        if (mRefreshHeaderView != null && mState == STATE_START) {
+                            mRefreshHeaderView.onBackToOriginalState();
+                        }
+
+                        if (mState == STATE_REFRESHING_UP) {
+                            if (mOnRefreshListener != null) {
+                                mOnRefreshListener.onRefreshing(RefreshLayout.this);
+                            }
+                        }
                     }
                 }
 
             });
-            animator.start();
+            mAnimator.start();
         }
     }
 
@@ -133,7 +173,11 @@ public class RefreshLayout extends FrameLayout {
                 }
             case MotionEvent.ACTION_UP:
                 if (mState == STATE_PULL) {
-                    changeState(STATE_REFRESHING_UP);
+                    if (mMoveY >= mHeaderViewHeight) {
+                        changeState(STATE_REFRESHING_UP);
+                    } else {
+                        changeState(STATE_CANCEL);
+                    }
                 }
                 break;
         }
@@ -184,13 +228,20 @@ public class RefreshLayout extends FrameLayout {
     }
 
     private void postViewY(float moveY) {
-        mAnimTime = 200;
+        mAnimTime = 300;
         switch (mState) {
             case STATE_START:
                 if (mRefreshHeaderView != null) {
                     mRefreshHeaderView.onFinishRefresh();
                 }
                 mMoveY = mHeaderViewHeight;
+                mFinalHeaderY = 0;
+                refreshingAnim();
+                break;
+            case STATE_CANCEL:
+                if (mRefreshHeaderView != null) {
+                    mRefreshHeaderView.onCancel();
+                }
                 mFinalHeaderY = 0;
                 refreshingAnim();
                 break;
@@ -240,9 +291,12 @@ public class RefreshLayout extends FrameLayout {
     }
 
     private boolean checkCanPull() {
-        if (mState == STATE_REFRESHING_UP || mState == STATE_REFRESHING_DOWN) {
-            return false;
-        }
+        return mState != STATE_REFRESHING_UP &&
+                mState != STATE_REFRESHING_DOWN &&
+                checkSupportViewCanPull();
+    }
+
+    protected boolean checkSupportViewCanPull() {
 
         if (mContentView instanceof ScrollView) {
             int posY = mContentView.getScrollY();
@@ -250,11 +304,14 @@ public class RefreshLayout extends FrameLayout {
         }
 
         return true;
+
     }
 
     public void setHeaderView(RefreshHeaderView headerView) {
         this.mRefreshHeaderView = headerView;
         if (mRefreshHeaderView != null) {
+            mRefreshHeaderView.setLayoutParams(new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
             this.addView(mRefreshHeaderView);
             mRefreshHeaderView.getViewTreeObserver().addOnGlobalLayoutListener(() -> {
                 if (mOnLayoutFinish) {
@@ -283,6 +340,8 @@ public class RefreshLayout extends FrameLayout {
 
         void onBackToOriginalState();
 
+        void onCancel();
+
     }
 
     public abstract static class RefreshHeaderView extends FrameLayout implements IRefreshHeaderView {
@@ -303,6 +362,12 @@ public class RefreshLayout extends FrameLayout {
         public RefreshHeaderView(@NonNull Context context, @Nullable AttributeSet attrs, int defStyleAttr, int defStyleRes) {
             super(context, attrs, defStyleAttr, defStyleRes);
         }
+
+    }
+
+    public interface OnRefreshListener {
+
+        void onRefreshing(RefreshLayout refreshLayout);
 
     }
 
