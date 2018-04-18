@@ -340,7 +340,7 @@ public class RefreshLayout extends FrameLayout {
         }
     }
 
-    public void setRefreshingEnable(boolean refreshingEnable) {
+    public void setRefreshEnable(boolean refreshingEnable) {
         this.mRefreshingEnable = refreshingEnable;
     }
 
