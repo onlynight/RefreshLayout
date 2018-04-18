@@ -224,8 +224,14 @@ public class RefreshLayout extends FrameLayout {
     }
 
     private void initContentView() {
-        if (mContentView == null && getChildCount() > 0) {
-            mContentView = getChildAt(0);
+        if (mContentView == null) {
+            int childCount = getChildCount();
+            for (int i = 0; i < childCount; i++) {
+                if (!(getChildAt(i) instanceof RefreshHeaderView)) {
+                    mContentView = getChildAt(i);
+                    break;
+                }
+            }
         }
     }
 

@@ -12,7 +12,7 @@ import com.github.onlynight.refreshlayout.demo.header.HeaderView;
 
 public class MainActivity extends AppCompatActivity implements RefreshLayout.OnRefreshListener {
 
-    RefreshLayout refreshLayout;
+    CommonRefreshLayout refreshLayout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -21,7 +21,6 @@ public class MainActivity extends AppCompatActivity implements RefreshLayout.OnR
 
         refreshLayout = findViewById(R.id.refresh_layout);
         refreshLayout.setOnRefreshListener(this);
-        refreshLayout.setHeaderView(new HeaderView(this));
 //        refreshLayout.setRefreshing(true);
 //        refreshLayout.setRefreshing(false);
     }
