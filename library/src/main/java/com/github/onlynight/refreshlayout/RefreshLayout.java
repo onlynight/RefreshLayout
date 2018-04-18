@@ -141,6 +141,9 @@ public class RefreshLayout extends FrameLayout {
                 public void onAnimationEnd(Animator animation) {
                     super.onAnimationEnd(animation);
                     if (mPostFinish) {
+                        if (mOnRefreshListener != null) {
+                            mOnRefreshListener.onRefreshing(RefreshLayout.this);
+                        }
                         mPostFinish = false;
                         changeState(STATE_START);
                     } else {
