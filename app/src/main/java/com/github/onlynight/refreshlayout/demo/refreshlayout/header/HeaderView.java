@@ -1,4 +1,4 @@
-package com.github.onlynight.refreshlayout.demo.header;
+package com.github.onlynight.refreshlayout.demo.refreshlayout.header;
 
 import android.annotation.TargetApi;
 import android.content.Context;

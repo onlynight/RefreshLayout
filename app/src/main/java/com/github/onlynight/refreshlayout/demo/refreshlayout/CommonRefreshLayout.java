@@ -1,11 +1,11 @@
-package com.github.onlynight.refreshlayout.demo;
+package com.github.onlynight.refreshlayout.demo.refreshlayout;
 
 import android.content.Context;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 
 import com.github.onlynight.refreshlayout.RefreshLayout;
-import com.github.onlynight.refreshlayout.demo.header.HeaderView;
+import com.github.onlynight.refreshlayout.demo.refreshlayout.header.HeaderView;
 
 public class CommonRefreshLayout extends RefreshLayout {
 

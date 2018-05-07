@@ -17,6 +17,8 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name=".ScrollViewDemoActivity" />
+        <activity android:name=".ViewDemoActivity"></activity>
     </application>
 
 </manifest>
