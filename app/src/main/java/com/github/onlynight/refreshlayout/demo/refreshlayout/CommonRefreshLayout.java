@@ -5,6 +5,7 @@ import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 
 import com.github.onlynight.refreshlayout.RefreshLayout;
+import com.github.onlynight.refreshlayout.demo.R;
 import com.github.onlynight.refreshlayout.demo.refreshlayout.header.HeaderView;
 
 public class CommonRefreshLayout extends RefreshLayout {
@@ -31,6 +32,7 @@ public class CommonRefreshLayout extends RefreshLayout {
 
     private void initView() {
         setHeaderView(new HeaderView(getContext()));
+        setEmptyView(R.layout.part_empty);
     }
 
 }

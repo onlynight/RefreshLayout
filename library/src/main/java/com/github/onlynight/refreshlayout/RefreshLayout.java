@@ -265,8 +265,8 @@ public class RefreshLayout extends FrameLayout {
             for (int i = 0; i < childCount; i++) {
                 View childView = getChildAt(i);
                 if (!(childView instanceof RefreshHeaderView) &&
-                        (childView.getTag() != null && !childView.getTag().equals(TAG_EMPTY_VIEW))) {
-                    mContentView = getChildAt(i);
+                        (childView.getTag() != null && !childView.getTag().equals(TAG_EMPTY_VIEW) || childView.getTag() == null)) {
+                    mContentView = childView;
                     break;
                 }
             }
@@ -441,6 +441,9 @@ public class RefreshLayout extends FrameLayout {
     public void setEmptyViewVisible(boolean visible) {
         if (emptyView != null) {
             emptyView.setVisibility(visible ? VISIBLE : GONE);
+        }
+
+        if (mContentView != null) {
             mContentView.setVisibility(visible ? GONE : VISIBLE);
         }
     }

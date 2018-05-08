@@ -15,7 +15,6 @@ public class EmptyViewDemoActivity extends AppCompatActivity {
         setContentView(R.layout.activity_empty_view_demo);
 
         refreshLayout = findViewById(R.id.refresh_layout);
-        refreshLayout.setEmptyView(R.layout.part_empty);
         refreshLayout.setOnRefreshListener(new RefreshLayout.OnRefreshListener() {
             @Override
             public void onRefreshing(RefreshLayout refreshLayout) {
