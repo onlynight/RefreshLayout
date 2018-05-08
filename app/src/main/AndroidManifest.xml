@@ -19,7 +19,8 @@
         </activity>
         <activity android:name=".ScrollViewDemoActivity" />
         <activity android:name=".ViewDemoActivity" />
-        <activity android:name=".RecyclerViewDemoActivity"></activity>
+        <activity android:name=".RecyclerViewDemoActivity" />
+        <activity android:name=".EmptyViewDemoActivity"></activity>
     </application>
 
 </manifest>

@@ -33,6 +33,12 @@
                 android:onClick="onViewDemoClick"
                 android:text="view demo" />
 
+            <Button
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:onClick="onEmptyViewDemoClick"
+                android:text="empty view demo" />
+
         </LinearLayout>
 
     </ScrollView>

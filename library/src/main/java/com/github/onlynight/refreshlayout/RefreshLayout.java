@@ -6,6 +6,7 @@ import android.animation.ValueAnimator;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.res.TypedArray;
+import android.support.annotation.LayoutRes;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v7.widget.GridLayoutManager;
@@ -13,6 +14,7 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.StaggeredGridLayoutManager;
 import android.util.AttributeSet;
+import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -32,6 +34,7 @@ public class RefreshLayout extends FrameLayout {
 
     private RefreshHeaderView mRefreshHeaderView;
     private View mContentView;
+    private View emptyView;
 
     private boolean mRefreshingEnable = true;
     private boolean mOnLayoutFinish = true;
@@ -351,25 +354,27 @@ public class RefreshLayout extends FrameLayout {
             int firstVisibleItem = -1;
             RecyclerView recyclerView = (RecyclerView) mContentView;
             RecyclerView.LayoutManager layoutManager = recyclerView.getLayoutManager();
-            int count = layoutManager.getItemCount();
+            if (layoutManager != null) {
+                int count = layoutManager.getItemCount();
 
-            if (layoutManager instanceof LinearLayoutManager) {
-                firstVisibleItem = ((LinearLayoutManager) layoutManager).findFirstVisibleItemPosition();
-            }
-
-            if (layoutManager instanceof GridLayoutManager) {
-                firstVisibleItem = ((GridLayoutManager) layoutManager).findFirstVisibleItemPosition();
-            }
-
-            if (layoutManager instanceof StaggeredGridLayoutManager) {
-                if (firstPositions == null) {
-                    firstPositions = new int[((StaggeredGridLayoutManager) layoutManager).getSpanCount()];
+                if (layoutManager instanceof LinearLayoutManager) {
+                    firstVisibleItem = ((LinearLayoutManager) layoutManager).findFirstVisibleItemPosition();
                 }
-                ((StaggeredGridLayoutManager) layoutManager).findFirstVisibleItemPositions(firstPositions);
-                firstVisibleItem = findMinPosition(firstPositions);
-            }
 
-            return count == 0 || firstVisibleItem == 0 && recyclerView.getChildAt(0).getTop() >= 0;
+                if (layoutManager instanceof GridLayoutManager) {
+                    firstVisibleItem = ((GridLayoutManager) layoutManager).findFirstVisibleItemPosition();
+                }
+
+                if (layoutManager instanceof StaggeredGridLayoutManager) {
+                    if (firstPositions == null) {
+                        firstPositions = new int[((StaggeredGridLayoutManager) layoutManager).getSpanCount()];
+                    }
+                    ((StaggeredGridLayoutManager) layoutManager).findFirstVisibleItemPositions(firstPositions);
+                    firstVisibleItem = findMinPosition(firstPositions);
+                }
+
+                return count == 0 || firstVisibleItem == 0 && recyclerView.getChildAt(0).getTop() >= 0;
+            }
         }
 
         return true;
@@ -408,6 +413,29 @@ public class RefreshLayout extends FrameLayout {
                     }
                 }
             });
+        }
+    }
+
+    public void setEmptyView(View emptyView) {
+        this.emptyView = emptyView;
+        if (this.emptyView != null) {
+            addView(emptyView);
+            emptyView.setVisibility(GONE);
+        }
+    }
+
+    public void setEmptyView(@LayoutRes int layoutRes) {
+        this.emptyView = LayoutInflater.from(getContext()).inflate(layoutRes, this, false);
+        if (this.emptyView != null) {
+            addView(emptyView);
+            emptyView.setVisibility(GONE);
+        }
+    }
+
+    public void setEmptyViewVisible(boolean visible) {
+        if (emptyView != null) {
+            emptyView.setVisibility(visible ? VISIBLE : GONE);
+            mContentView.setVisibility(visible ? GONE : VISIBLE);
         }
     }
 
