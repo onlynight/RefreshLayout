@@ -32,7 +32,9 @@ public class RefreshLayout extends FrameLayout {
     private boolean mOnLayoutFinish = true;
 
     private float mLastY;
+    private float mLastX;
     private float mLastYIntercept;
+    private float mLastXIntercept;
     private float mMoveY = 0;
 
     private float mHeaderViewHeight = 0;
@@ -169,61 +171,77 @@ public class RefreshLayout extends FrameLayout {
 
     private boolean isRefresh(MotionEvent ev) {
         float startY = ev.getY();
+        float startX = ev.getX();
         switch (ev.getAction()) {
             case MotionEvent.ACTION_DOWN:
-                break;
+                return true;
             case MotionEvent.ACTION_MOVE:
-                float moveY = (startY - mLastY) / 2;
-                mMoveY = moveY;
-                if (moveY > 0 && checkCanPull()) {
+                float deltaX = startX - mLastX;
+                float deltaY = startY - mLastY;
+//                if (Math.abs(deltaX) > Math.abs(deltaY)) {
+//                    return false;
+//                }
+                mMoveY = deltaY / 3;
+                if (deltaY > 0 && checkCanPull()) {
                     changeState(STATE_PULL);
                     return true;
                 } else {
                     return false;
                 }
             case MotionEvent.ACTION_UP:
+                mLastY = 0;
+                mLastX = 0;
                 if (mState == STATE_PULL) {
                     if (mMoveY >= mHeaderViewHeight) {
                         changeState(STATE_REFRESHING_UP);
                     } else {
                         changeState(STATE_CANCEL);
                     }
+                    return true;
                 }
                 break;
         }
         mLastY = startY;
+        mLastX = startX;
         return false;
-    }
-
-    @Override
-    public boolean dispatchTouchEvent(MotionEvent ev) {
-        if (mRefreshingEnable) {
-            isRefresh(ev);
-        }
-        return super.dispatchTouchEvent(ev);
     }
 
     @Override
     public boolean onInterceptTouchEvent(MotionEvent ev) {
         float startY = ev.getY();
+        float startX = ev.getX();
         switch (ev.getAction()) {
             case MotionEvent.ACTION_DOWN:
                 break;
             case MotionEvent.ACTION_MOVE:
-                float moveY = (startY - mLastYIntercept) / 3;
-                boolean intercept = moveY > 0 && checkCanPull();
+                float deltaX = startX - mLastXIntercept;
+                float deltaY = startY - mLastYIntercept;
+                boolean slidingConflict = Math.abs(deltaX) > Math.abs(deltaY);
+                boolean intercept = deltaY > 0 && checkCanPull() && !slidingConflict;
+
                 if (intercept && mRefreshHeaderView != null) {
                     mRefreshHeaderView.onStartRefresh();
                 }
                 return intercept;
             case MotionEvent.ACTION_UP:
                 mLastYIntercept = 0;
+                mLastXIntercept = 0;
                 break;
         }
 
+        mLastXIntercept = startX;
         mLastYIntercept = startY;
 
         return super.onInterceptTouchEvent(ev);
+    }
+
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        if (isRefresh(event)) {
+            return true;
+        }
+        return super.onTouchEvent(event);
     }
 
     private void initContentView() {
@@ -244,7 +262,7 @@ public class RefreshLayout extends FrameLayout {
     }
 
     private void postViewY(float moveY) {
-        mAnimTime = 300;
+        mAnimTime = 400;
         switch (mState) {
             case STATE_START:
                 if (mRefreshHeaderView != null) {
