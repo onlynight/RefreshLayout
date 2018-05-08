@@ -20,4 +20,8 @@ public class MainActivity extends AppCompatActivity {
     public void onViewDemoClick(View view) {
         startActivity(new Intent(this, ViewDemoActivity.class));
     }
+
+    public void onRecyclerViewDemoClick(View view) {
+        startActivity(new Intent(this, RecyclerViewDemoActivity.class));
+    }
 }

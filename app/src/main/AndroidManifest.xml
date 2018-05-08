@@ -18,7 +18,8 @@
             </intent-filter>
         </activity>
         <activity android:name=".ScrollViewDemoActivity" />
-        <activity android:name=".ViewDemoActivity"></activity>
+        <activity android:name=".ViewDemoActivity" />
+        <activity android:name=".RecyclerViewDemoActivity"></activity>
     </application>
 
 </manifest>

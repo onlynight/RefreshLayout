@@ -18,6 +18,12 @@
             <Button
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:onClick="onRecyclerViewDemoClick"
+                android:text="recycler view demo" />
+
+            <Button
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
                 android:onClick="onScrollViewDemoClick"
                 android:text="scroll view demo" />
 

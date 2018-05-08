@@ -8,6 +8,10 @@ import android.content.Context;
 import android.content.res.TypedArray;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.v7.widget.GridLayoutManager;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.StaggeredGridLayoutManager;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
@@ -48,6 +52,7 @@ public class RefreshLayout extends FrameLayout {
     private boolean mPostFinish = false;
 
     private OnRefreshListener mOnRefreshListener;
+    private int[] firstPositions;
 
     public RefreshLayout(Context context) {
         super(context);
@@ -341,8 +346,48 @@ public class RefreshLayout extends FrameLayout {
             return posY <= 0;
         }
 
+        if (mContentView instanceof RecyclerView) {
+            int firstVisibleItem = -1;
+            RecyclerView recyclerView = (RecyclerView) mContentView;
+            RecyclerView.LayoutManager layoutManager = recyclerView.getLayoutManager();
+            int count = layoutManager.getItemCount();
+
+            if (layoutManager instanceof LinearLayoutManager) {
+                firstVisibleItem = ((LinearLayoutManager) layoutManager).findFirstVisibleItemPosition();
+            }
+
+            if (layoutManager instanceof GridLayoutManager) {
+                firstVisibleItem = ((GridLayoutManager) layoutManager).findFirstVisibleItemPosition();
+            }
+
+            if (layoutManager instanceof StaggeredGridLayoutManager) {
+                if (firstPositions == null) {
+                    firstPositions = new int[((StaggeredGridLayoutManager) layoutManager).getSpanCount()];
+                }
+                ((StaggeredGridLayoutManager) layoutManager).findFirstVisibleItemPositions(firstPositions);
+                firstVisibleItem = findMinPosition(firstPositions);
+            }
+
+            return count == 0 || firstVisibleItem == 0 && recyclerView.getChildAt(0).getTop() >= 0;
+        }
+
         return true;
 
+    }
+
+    private int findMinPosition(int[] position) {
+        if (position == null) {
+            return -1;
+        }
+
+        int min = Integer.MAX_VALUE;
+        for (int value : position) {
+            if (value < min) {
+                min = value;
+            }
+        }
+
+        return min;
     }
 
     public void setHeaderView(RefreshHeaderView headerView) {
