@@ -121,6 +121,7 @@ public class RefreshLayout extends FrameLayout {
 
     private void refreshingAnim() {
         if (mHeaderViewHeight <= 0) {
+            mOnLayoutFinish = true;
             getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
                 @Override
                 public void onGlobalLayout() {
