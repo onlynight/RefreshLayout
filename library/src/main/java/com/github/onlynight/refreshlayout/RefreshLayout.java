@@ -32,6 +32,8 @@ public class RefreshLayout extends FrameLayout {
     private static final int STATE_PULL = STATE_START + 4;
     private static final int STATE_CANCEL = STATE_START + 5;
 
+    private static final String TAG_EMPTY_VIEW = "empty_view";
+
     private RefreshHeaderView mRefreshHeaderView;
     private View mContentView;
     private View emptyView;
@@ -261,7 +263,9 @@ public class RefreshLayout extends FrameLayout {
         if (mContentView == null) {
             int childCount = getChildCount();
             for (int i = 0; i < childCount; i++) {
-                if (!(getChildAt(i) instanceof RefreshHeaderView)) {
+                View childView = getChildAt(i);
+                if (!(childView instanceof RefreshHeaderView) &&
+                        (childView.getTag() != null && !childView.getTag().equals(TAG_EMPTY_VIEW))) {
                     mContentView = getChildAt(i);
                     break;
                 }
@@ -419,6 +423,7 @@ public class RefreshLayout extends FrameLayout {
     public void setEmptyView(View emptyView) {
         this.emptyView = emptyView;
         if (this.emptyView != null) {
+            this.emptyView.setTag(TAG_EMPTY_VIEW);
             addView(emptyView);
             emptyView.setVisibility(GONE);
         }
@@ -427,6 +432,7 @@ public class RefreshLayout extends FrameLayout {
     public void setEmptyView(@LayoutRes int layoutRes) {
         this.emptyView = LayoutInflater.from(getContext()).inflate(layoutRes, this, false);
         if (this.emptyView != null) {
+            this.emptyView.setTag(TAG_EMPTY_VIEW);
             addView(emptyView);
             emptyView.setVisibility(GONE);
         }
