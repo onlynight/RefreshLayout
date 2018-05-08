@@ -1,7 +1,7 @@
 package com.github.onlynight.refreshlayout.demo;
 
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -10,7 +10,7 @@ import android.widget.Toast;
 import com.github.onlynight.refreshlayout.RefreshLayout;
 import com.github.onlynight.refreshlayout.demo.refreshlayout.CommonRefreshLayout;
 
-public class ScrollViewDemoActivity extends AppCompatActivity implements RefreshLayout.OnRefreshListener{
+public class ScrollViewDemoActivity extends AppCompatActivity implements RefreshLayout.OnRefreshListener {
 
     CommonRefreshLayout refreshLayout;
 

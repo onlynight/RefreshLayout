@@ -21,9 +21,10 @@ public class RefreshLayout extends FrameLayout {
 
     private static final int STATE_START = 0;
     private static final int STATE_REFRESHING_DOWN = STATE_START + 1;
-    private static final int STATE_REFRESHING_UP = STATE_START + 2;
-    private static final int STATE_PULL = STATE_START + 3;
-    private static final int STATE_CANCEL = STATE_START + 4;
+    private static final int STATE_REFRESHING = STATE_START + 2;
+    private static final int STATE_REFRESHING_UP = STATE_START + 3;
+    private static final int STATE_PULL = STATE_START + 4;
+    private static final int STATE_CANCEL = STATE_START + 5;
 
     private RefreshHeaderView mRefreshHeaderView;
     private View mContentView;
@@ -142,6 +143,9 @@ public class RefreshLayout extends FrameLayout {
                 @Override
                 public void onAnimationEnd(Animator animation) {
                     super.onAnimationEnd(animation);
+                    if (mState == STATE_REFRESHING_DOWN) {
+                        mState = STATE_REFRESHING;
+                    }
                     if (mPostFinish) {
                         if (mOnRefreshListener != null) {
                             mOnRefreshListener.onRefreshing(RefreshLayout.this);
@@ -156,7 +160,7 @@ public class RefreshLayout extends FrameLayout {
                             mRefreshHeaderView.onBackToOriginalState();
                         }
 
-                        if (mState == STATE_REFRESHING_UP) {
+                        if (mState == STATE_REFRESHING || mState == STATE_REFRESHING_UP) {
                             if (mOnRefreshListener != null) {
                                 mOnRefreshListener.onRefreshing(RefreshLayout.this);
                             }
@@ -178,9 +182,6 @@ public class RefreshLayout extends FrameLayout {
             case MotionEvent.ACTION_MOVE:
                 float deltaX = startX - mLastX;
                 float deltaY = startY - mLastY;
-//                if (Math.abs(deltaX) > Math.abs(deltaY)) {
-//                    return false;
-//                }
                 mMoveY = deltaY / 3;
                 if (deltaY > 0 && checkCanPull()) {
                     changeState(STATE_PULL);
@@ -208,38 +209,41 @@ public class RefreshLayout extends FrameLayout {
 
     @Override
     public boolean onInterceptTouchEvent(MotionEvent ev) {
-        float startY = ev.getY();
-        float startX = ev.getX();
-        switch (ev.getAction()) {
-            case MotionEvent.ACTION_DOWN:
-                break;
-            case MotionEvent.ACTION_MOVE:
-                float deltaX = startX - mLastXIntercept;
-                float deltaY = startY - mLastYIntercept;
-                boolean slidingConflict = Math.abs(deltaX) > Math.abs(deltaY);
-                boolean intercept = deltaY > 0 && checkCanPull() && !slidingConflict;
+        if (mRefreshingEnable) {
+            float startY = ev.getY();
+            float startX = ev.getX();
+            switch (ev.getAction()) {
+                case MotionEvent.ACTION_DOWN:
+                    break;
+                case MotionEvent.ACTION_MOVE:
+                    float deltaX = startX - mLastXIntercept;
+                    float deltaY = startY - mLastYIntercept;
+                    boolean slidingConflict = Math.abs(deltaX) > Math.abs(deltaY);
+                    boolean intercept = deltaY > 0 && checkCanPull() && !slidingConflict;
 
-                if (intercept && mRefreshHeaderView != null) {
-                    mRefreshHeaderView.onStartRefresh();
-                }
-                return intercept;
-            case MotionEvent.ACTION_UP:
-                mLastYIntercept = 0;
-                mLastXIntercept = 0;
-                break;
+                    if (intercept && mRefreshHeaderView != null) {
+                        mRefreshHeaderView.onStartRefresh();
+                    }
+                    return intercept;
+                case MotionEvent.ACTION_UP:
+                    mLastYIntercept = 0;
+                    mLastXIntercept = 0;
+                    break;
+            }
+
+            mLastXIntercept = startX;
+            mLastYIntercept = startY;
         }
-
-        mLastXIntercept = startX;
-        mLastYIntercept = startY;
-
         return super.onInterceptTouchEvent(ev);
     }
 
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        if (isRefresh(event)) {
-            return true;
+        if (mRefreshingEnable) {
+            if (isRefresh(event)) {
+                return true;
+            }
         }
         return super.onTouchEvent(event);
     }
