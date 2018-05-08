@@ -23,13 +23,33 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 
+/**
+ * @author onlynight
+ * just like goolge's SwipeRefreshLayout functions,
+ * and it support empty view, more feature will add on the next version.
+ */
 public class RefreshLayout extends FrameLayout {
 
+    /**
+     * refreshing state
+     */
+
+    // state start
     private static final int STATE_START = 0;
+
+    // state animate down
     private static final int STATE_REFRESHING_DOWN = STATE_START + 1;
+
+    // state refreshing
     private static final int STATE_REFRESHING = STATE_START + 2;
+
+    // state animate up
     private static final int STATE_REFRESHING_UP = STATE_START + 3;
+
+    // state animate pulling
     private static final int STATE_PULL = STATE_START + 4;
+
+    // state cancel refresh
     private static final int STATE_CANCEL = STATE_START + 5;
 
     private static final String TAG_EMPTY_VIEW = "empty_view";
@@ -103,6 +123,13 @@ public class RefreshLayout extends FrameLayout {
         initContentView();
     }
 
+    /**
+     * set refreshing state
+     *
+     * @param refreshing if set true start refreshing and
+     *                   {@link OnRefreshListener#onRefreshing(RefreshLayout)} will be called;
+     *                   or stop refreshing.
+     */
     public void setRefreshing(boolean refreshing) {
         if (refreshing) {
             changeState(STATE_REFRESHING_DOWN);
@@ -400,6 +427,11 @@ public class RefreshLayout extends FrameLayout {
         return min;
     }
 
+    /**
+     * set the header view to show refresh state
+     *
+     * @param headerView {@link RefreshHeaderView}
+     */
     public void setHeaderView(RefreshHeaderView headerView) {
         this.mRefreshHeaderView = headerView;
         if (mRefreshHeaderView != null) {
@@ -420,6 +452,13 @@ public class RefreshLayout extends FrameLayout {
         }
     }
 
+    /**
+     * set the empty view.
+     * don't use this view's {@link View#setTag(Object)},
+     * or the function will not work.
+     *
+     * @param emptyView
+     */
     public void setEmptyView(View emptyView) {
         this.emptyView = emptyView;
         if (this.emptyView != null) {
@@ -438,6 +477,11 @@ public class RefreshLayout extends FrameLayout {
         }
     }
 
+    /**
+     * set the empty view visible
+     *
+     * @param visible
+     */
     public void setEmptyViewVisible(boolean visible) {
         if (emptyView != null) {
             emptyView.setVisibility(visible ? VISIBLE : GONE);
@@ -448,6 +492,11 @@ public class RefreshLayout extends FrameLayout {
         }
     }
 
+    /**
+     * set refresh function enable
+     *
+     * @param refreshingEnable
+     */
     public void setRefreshEnable(boolean refreshingEnable) {
         this.mRefreshingEnable = refreshingEnable;
     }
