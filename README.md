@@ -30,7 +30,7 @@ Step 2. Add the dependency
 
 ```groovy
 dependencies {
-    implementation 'com.github.onlynight:RefreshLayout:0.5.2'
+    implementation 'com.github.onlynight:RefreshLayout:0.5.3'
 }
 ```
 
