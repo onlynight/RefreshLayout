@@ -63,8 +63,11 @@ public class RefreshLayout extends FrameLayout {
 
     private float mLastY;
     private float mLastX;
+    private float mYActionDown;
     private float mLastYIntercept;
     private float mLastXIntercept;
+    private float mXActionDownIntercept;
+    private float mYActionDownIntercept;
     private float mMoveY = 0;
 
     private float mHeaderViewHeight = 0;
@@ -212,14 +215,11 @@ public class RefreshLayout extends FrameLayout {
     }
 
     private boolean isRefresh(MotionEvent ev) {
-        float startY = ev.getY();
-        float startX = ev.getX();
         switch (ev.getAction()) {
             case MotionEvent.ACTION_DOWN:
                 return true;
             case MotionEvent.ACTION_MOVE:
-                float deltaX = startX - mLastX;
-                float deltaY = startY - mLastY;
+                float deltaY = ev.getY() - mYActionDown;
                 mMoveY = deltaY / 3;
                 if (deltaY > 0 && checkCanPull()) {
                     changeState(STATE_PULL);
@@ -228,8 +228,6 @@ public class RefreshLayout extends FrameLayout {
                     return false;
                 }
             case MotionEvent.ACTION_UP:
-                mLastY = 0;
-                mLastX = 0;
                 if (mState == STATE_PULL) {
                     if (mMoveY >= mHeaderViewHeight) {
                         changeState(STATE_REFRESHING_UP);
@@ -240,8 +238,6 @@ public class RefreshLayout extends FrameLayout {
                 }
                 break;
         }
-        mLastY = startY;
-        mLastX = startX;
         return false;
     }
 
@@ -252,6 +248,9 @@ public class RefreshLayout extends FrameLayout {
             float startX = ev.getX();
             switch (ev.getAction()) {
                 case MotionEvent.ACTION_DOWN:
+                    startY = ev.getY();
+                    startX = ev.getX();
+                    mYActionDown = ev.getY();
                     break;
                 case MotionEvent.ACTION_MOVE:
                     float deltaX = startX - mLastXIntercept;
